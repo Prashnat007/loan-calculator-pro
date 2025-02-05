@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced EMI Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #9333ea;
+            --secondary-color: #f97316;
+            --background-color: #f9fafb;
+            --card-background: white;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #a855f7;
+            --secondary-color: #fb923c;
+            --background-color: #1f2937;
+            --card-background: #374151;
+            --text-color: #f3f4f6;
+            --border-color: #4b5563;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            padding: 20px;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--card-background);
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .select-wrapper {
+            position: relative;
+            min-width: 120px;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            background: var(--card-background);
+            color: var(--text-color);
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .theme-toggle {
+            padding: 8px 16px;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            background: var(--card-background);
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+            width: 100%;
+        }
+
+        .input-section, .results-section {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            width: 100%;
+        }
+
+        .input-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+
+        .input-label label {
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        .input-value {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="range"] {
+            width: 100%;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--card-background);
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="range"] {
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+            width: 100%;
+        }
+
+        .summary-item {
+            background: var(--background-color);
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .summary-item .label {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-item .value {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            background: var(--card-background);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            height: 300px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .controls {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .select-wrapper {
+                width: 100%;
+            }
+
+            .theme-toggle {
+                width: 100%;
+            }
+
+            .calculator-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .input-section, .results-section {
+                padding: 1rem;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>EMI Calculator Pro</h1>
+            <div class="controls">
+                <div class="select-wrapper">
+                    <select id="currency-selector">
+                        <option value="₹">INR (₹)</option>
+                        <option value="$">USD ($)</option>
+                        <option value="€">EUR (€)</option>
+                        <option value="£">GBP (£)</option>
+                    </select>
+                </div>
+                <button id="theme-toggle" class="theme-toggle">
+                    Toggle Theme
+                </button>
+            </div>
+        </div>
+
+        <div class="calculator-grid">
+            <div class="input-section">
+                <div class="input-group">
+                    <div class="input-label">
+                        <label>Loan Amount</label>
+                        <span class="input-value" id="amount-display">₹ 5,000,000</span>
+                    </div>
+                    <input type="text" id="amount" value="5000000">
+                    <input type="range" id="amount-range" min="100000" max="10000000" value="5000000">
+                </div>
+
+                <div class="input-group">
+                    <div class="input-label">
+                        <label>Loan Term (Years)</label>
+                        <span class="input-value" id="years-display">26 years</span>
+                    </div>
+                    <input type="text" id="years" value="26">
+                    <input type="range" id="years-range" min="1" max="30" value="26">
+                </div>
+
+                <div class="input-group">
+                    <div class="input-label">
+                        <label>Interest Rate (%)</label>
+                        <span class="input-value" id="interest-display">11.25%</span>
+                    </div>
+                    <input type="text" id="interest" value="11.25">
+                    <input type="range" id="interest-range" min="5" max="20" step="0.25" value="11.25">
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="label">Monthly EMI</div>
+                        <div class="value" id="monthly-emi">₹ 0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Total Interest</div>
+                        <div class="value" id="total-interest">₹ 0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Total Amount</div>
+                        <div class="value" id="total-amount">₹ 0</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="emiChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        let currentCurrency = '₹';
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            updateChart();
+        });
+
+        // Currency selector functionality
+        const currencySelector = document.getElementById('currency-selector');
+        currencySelector.addEventListener('change', (e) => {
+            currentCurrency = e.target.value;
+            calculateEMI();
+            updateDisplays();
+        });
+
+        // Initialize chart
+        function initializeChart() {
+            const ctx = document.getElementById('emiChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Principal', 'Interest'],
+                    datasets: [{
+                        data: [5000000, 0],
+                        backgroundColor: ['#36A2EB', '#FF6384']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // Calculate EMI
+        function calculateEMI() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const years = parseFloat(document.getElementById('years').value);
+            const interestRate = parseFloat(document.getElementById('interest').value);
+
+            const monthlyRate = (interestRate / 100) / 12;
+            const numberOfPayments = years * 12;
+
+            const emi = (amount * monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) / 
+                       (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+
+            const totalAmount = emi * numberOfPayments;
+            const totalInterest = totalAmount - amount;
+
+            document.getElementById('monthly-emi').textContent = 
+                `${currentCurrency} ${Math.round(emi).toLocaleString()}`;
+            document.getElementById('total-interest').textContent = 
+                `${currentCurrency} ${Math.round(totalInterest).toLocaleString()}`;
+            document.getElementById('total-amount').textContent = 
+                `${currentCurrency} ${Math.round(totalAmount).toLocaleString()}`;
+
+            chart.data.datasets[0].data = [amount, totalInterest];
+            chart.update();
+        }
+
+        // Update displays
+        function updateDisplays() {
+            const amount = document.getElementById('amount').value;
+            const years = document.getElementById('years').value;
+            const interest = document.getElementById('interest').value;
+
+            document.getElementById('amount-display').textContent = 
+                `${currentCurrency} ${parseFloat(amount).toLocaleString()}`;
+            document.getElementById('years-display').textContent = 
+                `${years} years`;
+            document.getElementById('interest-display').textContent = 
+                `${interest}%`;
+        }
+
+        // Add event listeners
+        function initializeEventListeners() {
+            ['amount', 'years', 'interest'].forEach(id => {
+                const input = document.getElementById(id);
+                const range = document.getElementById(id + '-range');
+
+                input.addEventListener('input', function() {
+                    range.value = this.value;
+                    updateDisplays();
+                    calculateEMI();
+                });
+
+                range.addEventListener('input', function() {
+                    input.value = this.value;
+                    updateDisplays();
+                    calculateEMI();
+                });
+            });
+        }
+
+        // Initialize everything when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeChart();
+            initializeEventListeners();
+            calculateEMI();
+        });
+    </script>
+</body>
+</html>
