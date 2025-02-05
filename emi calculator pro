@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Loan EMI Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #818cf8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --text-color: #1f2937;
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f3f4f6;
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .calculator-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            padding: 2rem;
+        }
+
+        .title {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border-color 0.15s ease-in-out;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .charts-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .chart-wrapper {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            min-height: 300px;
+            width: 100%;
+        }
+
+        .chart-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .download-btn {
+            background-color: var(--success-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.15s ease-in-out;
+        }
+
+        .download-btn:hover {
+            background-color: #059669;
+        }
+
+        .download-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .chart-watermark {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.75rem;
+            color: rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .result-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-title {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .alert {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: var(--border-radius);
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin-top: 2rem;
+            border-collapse: collapse;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+        }
+
+        .comparison-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-right: 1rem;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        @media print {
+            .download-btn {
+                display: none;
+            }
+        }
+
+        /* Added table scroll indicator */
+        .table-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-scroll-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color) var(--scroll), transparent 0);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .table-container:hover .table-scroll-indicator {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="calculator-card">
+            <h1 class="title">Advanced Loan EMI Calculator</h1>
+            
+            <form id="loanForm">
+                <div class="grid">
+                    <div class="left-section">
+                        <div class="input-group">
+                            <label class="label" for="loanAmount">Loan Amount (₹)</label>
+                            <input type="number" id="loanAmount" class="input" value="1000000" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label class="label" for="interestRate">Interest Rate (%)</label>
+                            <input type="number" id="interestRate" class="input" value="8.5" step="0.1" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label class="label" for="loanTerm">Loan Term (Years)</label>
+                            <input type="number" id="loanTerm" class="input" value="20" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="label" for="prepayment">Prepayment Amount (₹)</label>
+                            <input type="number" id="prepayment" class="input" value="0">
+                        </div>
+
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="reduceTenure">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Reduce Loan Tenure (instead of EMI)</span>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="label" for="insurancePremium">Loan Insurance Premium (₹/year)</label>
+                            <input type="number" id="insurancePremium" class="input" value="0">
+                        </div>
+
+                        <div class="input-group">
+                            <label class="label" for="processingFee">Processing Fee (%)</label>
+                            <input type="number" id="processingFee" class="input" value="1" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="right-section">
+                        <div class="chart-wrapper">
+                            <div class="chart-actions">
+                                <button type="button" class="download-btn" onclick="downloadChart('breakdownChart', 'loan-breakdown')">
+                                    <svg class="download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Download
+                                </button>
+                            </div>
+                            <canvas id="breakdownChart"></canvas>
+                            <div class="chart-watermark">Generated by Loan EMI Calculator</div>
+                            <div class="loading">Downloading...</div>
+                        </div>
+                        
+                        <div class="chart-wrapper">
+                            <div class="chart-actions">
+                                <button type="button" class="download-btn" onclick="downloadChart('amortizationChart', 'loan-amortization')">
+                                    <svg class="download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Download
+                                </button>
+                            </div>
+                            <canvas id="amortizationChart"></canvas>
+                            <div class="chart-watermark">Generated by Loan EMI Calculator</div>
+                            <div class="loading">Downloading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div class="result-title">Monthly EMI</div>
+                        <div class="result-value" id="emiValue">₹0</div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <div class="result-title">Total Interest</div>
+                        <div class="result-value" id="totalInterest">₹0</div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <div class="result-title">Total Payment</div>
+                        <div class="result-value" id="totalPayment">₹0</div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-title">Effective Interest Rate</div>
+                        <div class="result-value" id="effectiveRate">0%</div>
+                    </div>
+                </div>
+
+                <div id="prepaymentImpact" class="alert" style="display: none;">
+                    <h3>Prepayment Impact</h3>
+                    <p id="prepaymentSavings"></p>
+                    <p id="newTermOrEmi"></p>
+                </div>
+
+                <div class="table-container">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Opening Balance</th>
+                                <th>EMI</th>
+                                <th>Principal</th>
+                                <th>Interest</th>
+                                <th>Closing Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="amortizationTable"></tbody>
+                    </table>
+                    <div class="table-scroll-indicator"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let breakdownChart, amortizationChart;
+
+        function initializeCharts() {
+            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            Chart.defaults.responsive = true;
+            Chart.defaults.maintainAspectRatio = false;
+const breakdownCtx = document.getElementById('breakdownChart').getContext('2d');
+            const amortizationCtx = document.getElementById('amortizationChart').getContext('2d');
+
+            breakdownChart = new Chart(breakdownCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Principal', 'Interest', 'Insurance', 'Processing Fee'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#4f46e5', '#818cf8', '#10b981', '#f59e0b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Cost Breakdown'
+                        }
+                    }
+                }
+            });
+
+            amortizationChart = new Chart(amortizationCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Principal Balance',
+                        data: [],
+                        borderColor: '#4f46e5',
+                        tension: 0.1,
+                        fill: true,
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Loan Amortization Schedule'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function downloadChart(chartId, filename) {
+            const chartWrapper = document.getElementById(chartId).parentElement;
+            const loadingIndicator = chartWrapper.querySelector('.loading');
+            
+            try {
+                loadingIndicator.classList.add('active');
+                
+                const container = document.createElement('div');
+                container.style.width = '800px';
+                container.style.height = '400px';
+                container.style.position = 'absolute';
+                container.style.left = '-9999px';
+                container.style.backgroundColor = 'white';
+                container.style.padding = '20px';
+                document.body.appendChild(container);
+
+                const canvas = document.getElementById(chartId);
+                const clone = canvas.cloneNode(true);
+                container.appendChild(clone);
+
+                const watermark = document.createElement('div');
+                watermark.style.position = 'absolute';
+                watermark.style.bottom = '10px';
+                watermark.style.right = '10px';
+                watermark.style.fontSize = '12px';
+                watermark.style.color = 'rgba(0, 0, 0, 0.2)';
+                watermark.textContent = 'Generated by Loan EMI Calculator';
+                container.appendChild(watermark);
+
+                const image = await html2canvas(container, {
+                    backgroundColor: 'white',
+                    scale: 2,
+                    logging: false
+                });
+
+                const link = document.createElement('a');
+                link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`;
+                link.href = image.toDataURL('image/png');
+                link.click();
+
+                document.body.removeChild(container);
+            } catch (error) {
+                console.error('Error downloading chart:', error);
+                alert('Failed to download chart. Please try again.');
+            } finally {
+                loadingIndicator.classList.remove('active');
+            }
+        }
+
+        function formatCurrency(amount) {
+            return '₹' + amount.toLocaleString('en-IN', {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2
+            });
+        }
+
+        function calculateLoan() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value);
+            const loanTerm = parseFloat(document.getElementById('loanTerm').value);
+            const prepayment = parseFloat(document.getElementById('prepayment').value) || 0;
+            const reduceTenure = document.getElementById('reduceTenure').checked;
+            const insurancePremium = parseFloat(document.getElementById('insurancePremium').value) || 0;
+            const processingFee = parseFloat(document.getElementById('processingFee').value) || 0;
+
+            const monthlyRate = (interestRate / 12) / 100;
+            const totalMonths = loanTerm * 12;
+            
+            const emi = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
+                       (Math.pow(1 + monthlyRate, totalMonths) - 1);
+
+            const processingFeeAmount = (loanAmount * processingFee) / 100;
+            const totalPayment = emi * totalMonths;
+            const totalInterest = totalPayment - loanAmount;
+            const totalInsurance = insurancePremium * loanTerm;
+            const totalCost = totalInterest + processingFeeAmount + totalInsurance;
+            const effectiveRate = ((totalCost / loanAmount) / loanTerm) * 100;
+
+            // Update breakdown chart
+            breakdownChart.data.datasets[0].data = [
+                loanAmount,
+                totalInterest,
+                totalInsurance,
+                processingFeeAmount
+            ];
+            breakdownChart.update();
+
+            // Generate amortization schedule
+            let balance = loanAmount;
+            const schedule = [];
+            const balances = [];
+            
+            for (let year = 1; year <= loanTerm; year++) {
+                let yearlyPrincipal = 0;
+                let yearlyInterest = 0;
+                
+                for (let month = 1; month <= 12; month++) {
+                    const interest = balance * monthlyRate;
+                    const principal = emi - interest;
+                    
+                    yearlyPrincipal += principal;
+                    yearlyInterest += interest;
+                    balance -= principal;
+                }
+                
+                schedule.push({
+                    year,
+                    openingBalance: balance + yearlyPrincipal,
+                    emi: emi * 12,
+                    principal: yearlyPrincipal,
+                    interest: yearlyInterest,
+                    closingBalance: balance
+                });
+                balances.push(balance);
+            }
+
+            // Update amortization chart
+            amortizationChart.data.labels = schedule.map(item => `Year ${item.year}`);
+            amortizationChart.data.datasets[0].data = schedule.map(item => item.closingBalance);
+            amortizationChart.update();
+
+            // Update amortization table
+            const tableBody = document.getElementById('amortizationTable');
+            tableBody.innerHTML = '';
+            
+            schedule.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>Year ${item.year}</td>
+                    <td>${formatCurrency(item.openingBalance)}</td>
+                    <td>${formatCurrency(item.emi)}</td>
+                    <td>${formatCurrency(item.principal)}</td>
+                    <td>${formatCurrency(item.interest)}</td>
+                    <td>${formatCurrency(item.closingBalance)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Calculate and display prepayment impact
+            if (prepayment > 0) {
+                const prepaymentImpact = document.getElementById('prepaymentImpact');
+                const reducedPrincipal = loanAmount - prepayment;
+                let newEmi, newTerm, savings;
+
+                if (reduceTenure) {
+                    newEmi = emi;
+                    newTerm = Math.log(newEmi / (newEmi - reducedPrincipal * monthlyRate)) / 
+                             Math.log(1 + monthlyRate);
+                    newTerm = Math.ceil(newTerm / 12);
+                    savings = (emi * totalMonths) - (newEmi * newTerm * 12);
+                    
+                    document.getElementById('newTermOrEmi').textContent = 
+                        `New Loan Term: ${newTerm} years (reduced by ${loanTerm - newTerm} years)`;
+                } else {
+                    newEmi = (reducedPrincipal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
+                            (Math.pow(1 + monthlyRate, totalMonths) - 1);
+                    savings = (emi * totalMonths) - (newEmi * totalMonths);
+                    
+                    document.getElementById('newTermOrEmi').textContent = 
+                        `New EMI: ${formatCurrency(newEmi)} (reduced by ${formatCurrency(emi - newEmi)})`;
+                }
+
+                document.getElementById('prepaymentSavings').textContent = 
+                    `Total Savings: ${formatCurrency(savings)}`;
+                prepaymentImpact.style.display = 'block';
+            } else {
+                document.getElementById('prepaymentImpact').style.display = 'none';
+            }
+
+            // Update result cards
+            document.getElementById('emiValue').textContent = formatCurrency(emi);
+            document.getElementById('totalInterest').textContent = formatCurrency(totalInterest);
+            document.getElementById('totalPayment').textContent = 
+                formatCurrency(totalPayment + totalInsurance + processingFeeAmount);
+            document.getElementById('effectiveRate').textContent = `${effectiveRate.toFixed(2)}%`;
+        }
+
+        // Handle table scroll indicator
+        function updateScrollIndicator() {
+            const table = document.querySelector('.comparison-table');
+            const indicator = document.querySelector('.table-scroll-indicator');
+            const scrollPercentage = (table.scrollLeft / (table.scrollWidth - table.clientWidth)) * 100;
+            indicator.style.setProperty('--scroll', `${scrollPercentage}%`);
+        }
+
+        // Initialize calculator
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeCharts();
+            calculateLoan();
+
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('change', calculateLoan);
+                input.addEventListener('input', calculateLoan);
+            });
+
+            const table = document.querySelector('.comparison-table');
+            table.addEventListener('scroll', updateScrollIndicator);
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (breakdownChart && amortizationChart) {
+                breakdownChart.resize();
+                amortizationChart.resize();
+            }
+        });
+    </script>
+</body>
+</html>
